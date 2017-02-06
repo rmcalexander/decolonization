@@ -50,5 +50,8 @@ decolonization <- decolonization[!is.na(decolonization$ns5emp),]
 decolonization$any_resist <- as.numeric(!is.na(decolonization$resis_meth))
 decolonization$violent_resist <- as.numeric(decolonization$resis_meth == 0)
 decolonization$violent_resist[is.na(decolonization$violent_resist)] <- 0
-decolonization$nonviolent_resist<-as.numeric(decolonization$violent_resist != 0)
+
+decolonization$nonviolent_resist<-as.numeric(decolonization$resis_meth > 0)
 decolonization$nonviolent_resist[is.na(decolonization$nonviolent_resist)] <- 0
+
+decolonization<-filter(decolonization,year<1976)
