@@ -226,6 +226,8 @@ WPP2015_POP_F06_POPULATION_DENSITY$year<-as.numeric(as.character(WPP2015_POP_F06
 decolonization<-merge(decolonization,WPP2015_POP_F06_POPULATION_DENSITY,all.x=TRUE)
 #WPP2015_POP_F06_POPULATION_DENSITY<-reshape2::melt(WPP2015_POP_F06_POPULATION_DENSITY)
 
+
+decolonization$violent_resist_weighted<-decolonization$violent_resist*decolonization$camp_conf_intensity
 #interpolate
 library(zoo)
 decolonization<-decolonization[order(decolonization$country,decolonization$year),]

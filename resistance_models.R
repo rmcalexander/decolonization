@@ -120,3 +120,54 @@ summary(AER::ivreg(
   +age_imputed+density_imputed,data=decolonization
 ),diagnostics = TRUE)
 
+summary(AER::ivreg(
+  autonNS~violent_resist_weighted+csyear1+csyear2+rr_std+literacy+constborder+
+    Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+nonviolent_resist.l1
+  |csyear1+csyear2+rr_std+literacy+Netherlands+
+    Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1
+  +age_imputed+density_imputed,data=decolonization
+),diagnostics = TRUE)
+
+summary(AER::ivreg(
+  autonNS~violent_resist_weighted+csyear1+csyear2+rr_std+literacy+Netherlands+
+    Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1
+  |csyear1+csyear2+rr_std+literacy+Netherlands+
+    Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+density_imputed,data=decolonization
+),diagnostics = TRUE)
+
+#try with predict
+
+predictdf<-dplyr::select(decolonization,autonNS,violent_resist_weighted,violent_resist,nonviolent_resist.l1,
+                  csyear1,csyear2,rr_std,literacy,constborder,Portugal,French,British,Netherlands,africa,asia,lamerica,settler_pop,age_imputed,density_imputed) %>% na.omit()
+
+predictdf$pred_age<-predict(lm(violent_resist_weighted~csyear1+csyear2+rr_std+literacy+Netherlands+
+                                 Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+age_imputed,data=predictdf))
+
+predictdf$pred_density<-predict(lm(violent_resist_weighted~csyear1+csyear2+rr_std+literacy+Portugal+French+British+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+density_imputed,data=predictdf))
+
+summary(lm(violent_resist_weighted~csyear1+csyear2+rr_std+literacy+
+             Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+density_imputed,data=predictdf))
+summary(glm(autonNS~csyear1+csyear2+rr_std+literacy+Portugal+French+British+Netherlands+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+pred_density,data=predictdf,family=binomial(link="logit")))
+
+summary(glm(autonNS~csyear1+csyear2+rr_std+literacy+
+              Portugal+French+British+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+pred_density,data=predictdf,family=binomial(link="probit")))
+
+summary(rstanarm::stan_glm(autonNS~csyear1+csyear2+rr_std+literacy+
+              Portugal+French+British+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+pred_density,data=predictdf,family=binomial(link="probit")))
+
+
+#get right standard errros from bootstrap
+bootfun<-function(data=predictdf,index){
+  stage1<-predict(lm(violent_resist_weighted~csyear1+csyear2+rr_std+density_imputed+Portugal+French+British+africa+asia+settler_pop+constborder+nonviolent_resist.l1,subset=index,data=predictdf))
+  coefficients(lm(autonNS~stage1+csyear1+csyear2+rr_std+literacy+Portugal+French+British+africa+asia+settler_pop+constborder+nonviolent_resist.l1,subset=index,data=predictdf))
+}
+  
+
+boot_output<-boot(predictdf,bootfun,R=5)
+boot_output
+summary(boot_output)
+
+summary(AER::ivreg(
+  autonNS~violent_resist_weighted+csyear1+csyear2+rr_std+Portugal+French+British+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1
+  |csyear1+csyear2+rr_std+density_imputed+Portugal+French+British+africa+asia+lamerica+settler_pop+constborder+nonviolent_resist.l1+density_imputed,data=decolonization
+),diagnostics = TRUE)
