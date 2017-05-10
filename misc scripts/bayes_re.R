@@ -1,4 +1,6 @@
-#random effects model
+#NOT USED
+#bayesian random effects model
+
 library(rstan)
 library(rstanarm )
 library(tidyverse)
