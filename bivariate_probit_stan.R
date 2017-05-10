@@ -1,7 +1,11 @@
+#this file runs a bivariate probit model. code largely stolen from the stan manual
 library(rstan)
+
+#formating
 bv_mat<-ivprobitdf
 ivprobitdf[,ncol(ivprobitdf)+1]<-1
 
+#create list to pass to stan()
 bv_data<-list(
   K<-as.integer(11),
   D<-as.integer(2),
@@ -10,8 +14,8 @@ bv_data<-list(
   x<-ivprobitdf[,c(11,3,17,15,8,9,23,16,4,7,ncol(ivprobitdf))],
   instr<-exp(ivprobitdf$age_log)
 )
-colnames(ivprobitdf)
-colnames(ivprobitdf[,c(11,3,17,15,8,9,23,16,4,7,ncol(ivprobitdf))])
+
+#stan code
 bv_code<-"functions { // define sum function
   int sum(int[,] a) {
     int s;
@@ -111,10 +115,12 @@ model {
 
 "
 
+#run the model
 bv_model<-stan(model_code = bv_code,
                      data = bv_data,
                      seed = 123,
                      chains = 8,cores=1,
                      iter = 5000)
 
+#print the results
 print(bv_model,pars=c("beta","beta2"), digits = 4)
