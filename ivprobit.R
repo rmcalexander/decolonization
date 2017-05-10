@@ -83,4 +83,10 @@ AT(biv_ate,nm.end = "violent_resist",type="simultaneous")
 #ATT
 AT(biv_ate,nm.end = "violent_resist",E=FALSE,treat=TRUE,type="simultaneous")
 #plot
+pdf("figures/semiparivprobit.pdf",height = 5, width = 7)
 AT(biv_ate,nm.end = "violent_resist",E=FALSE,treat=TRUE,type="simultaneous",hd.plot=TRUE)
+dev.off()
+
+pdf("figures/semiparivprobitate.pdf",height = 5, width = 7)
+AT(biv_ate,nm.end = "violent_resist",E=FALSE,treat=FALSE,type="simultaneous",hd.plot=TRUE)
+dev.off()
