@@ -1,22 +1,24 @@
+#Load Packages
 library(MatchIt)
 library(tidyverse)
+
+#create dataframe used for matching
 matchdf <- dplyr::select(decolonization,autonNS,violent_resist,density_imputed,AREA,settler_pop,nsf5neigh,rr_std,time1,British,French,africa,middleeast,lamerica,Netherlands,nonviolent_resist,literacy,asia,time2,age_imputed,centercap,time3) %>% na.omit() %>% as.data.frame()
 matchdf$density_imputed_log<-log(matchdf$density_imputed)
 matchdf$age_log<-log(matchdf$age_imputed+1)
+
+#try genetic matching for violent resistance
 m.out <- matchit(violent_resist ~density_imputed_log+ rr_std + AREA + time1 + British + literacy+French+middleeast+asia+centercap, method="genetic",
                  data=matchdf,distance="logit")
 summary(m.out)
 
 m.data <- MatchIt::match.data(m.out)
+
+#test to see if there is a difference between treated and control
 exactRankTests::wilcox.exact(m.data$autonNS[m.data$violent_resist==1],
              m.data$autonNS[m.data$violent_resist==0])
 
-mean(m.data$autonNS[m.data$violent_resist==1])
-mean(m.data$autonNS[m.data$violent_resist==0])
-mean(m.data$autonNS[m.data$violent_resist==1])-mean(m.data$autonNS[m.data$violent_resist==0])
-
-
-#genmatch
+#do rosenbaum sensitivity bounds
 library("Matching")
 library("rbounds")
 Y <- matchdf$autonNS
@@ -24,19 +26,19 @@ Tr <- matchdf$violent_resist
 
 glm1 <- glm(Tr ~ density_imputed_log+ rr_std + AREA + time1 +asia+settler_pop, family = binomial("logit"), data = matchdf)
 summary(glm1)
-#mb<-MatchBalance(Tr ~ density_imputed_log + settler_pop + rr_std + AREA + time1 +British + literacy + middleeast ,nboots = 500, data = ivprobitdf)
+
 rr1 <- Match(Y = Y, Tr = Tr, X = glm1$fitted)
 summary(rr1)
+
 rr2 <- GenMatch(Tr = Tr, X = glm1$fitted,pop.size = 2000)
 
 mgen1 <- Match(Y = Y, Tr = Tr, X = glm1$fitted, Weight.matrix = rr2)
 
+#check balance
 MatchBalance(Tr ~ density_imputed_log+ rr_std + AREA + time1 +French+middleeast+asia+centercap+settler_pop+nsf5neigh, data = matchdf,match.out=mgen1)
 summary(mgen1)
-mean(matchdf$autonNS[mgen1$index.treated])
-mean(matchdf$autonNS[mgen1$index.control])
 
-
+#test difference
 exactRankTests::wilcox.exact(matchdf$autonNS[mgen1$index.treated]
   ,matchdf$autonNS[mgen1$index.control]
 )
@@ -46,7 +48,8 @@ t.test(matchdf$autonNS[mgen1$index.treated]
 wilcox.test(matchdf$autonNS[mgen1$index.treated]
                              ,matchdf$autonNS[mgen1$index.control],paired=TRUE
 )
-psens(mgen1, Gamma=5, GammaInc=.5)
+
+#present sensitivty analysis bounds
 binarysens(mgen1, Gamma=10, GammaInc=.25)
 
 #####
@@ -96,13 +99,16 @@ wilcox.test(matchdf$autonNS[mgen1_non$index.treated]
 psens(mgen1_non, Gamma=5, GammaInc=.1)
 binarysens(mgen1_non, Gamma=2, GammaInc=.1)
 
-#try caussens
+#try Blackwell's causal sensitivity analysis
 library(causalsens)
-ymodel<-lm(autonNS ~ violent_resist+ rr_std + AREA + time1 +French+British+time2+time3+middleeast+settler_pop+nsf5neigh, data = matchdf)
-summary(ymodel)
 
+#outcome model
+ymodel<-lm(autonNS ~ violent_resist+ rr_std + AREA + time1 +French+British+time2+time3+middleeast+settler_pop+nsf5neigh, data = matchdf)
+
+#treatment model
 pmodel<-glm(violent_resist ~ density_imputed_log+ rr_std + AREA + time1 +French+middleeast+asia+centercap+settler_pop+nsf5neigh, family = binomial("logit"), data = matchdf)
 
+#make plots
 ll.sens <-causalsens(ymodel, pmodel, ~ violent_resist, data = matchdf, confound = one.sided.att)
 ll.sens
 plot(ll.sens, type = "r.squared", bty = "n")
